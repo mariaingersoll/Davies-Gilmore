@@ -252,10 +252,115 @@ ACTUAL DIFFERENTIAL GENE EXPRESSION ANALYSIS STARTS HERE
 - CC: Cellular component
 
 - Manipulated BD_DE.txt in excel following Sarah's verbal instructions and loaded it here
+- BD_DE_GO has the -log(p-values)
+- From the timmy_uptake file, we got log2 fold change (MLE): treat D vs B
+- Reminder: this means that pos log2FC values indicate D is upregulated compared to B; The name provided in the second element (B) is the baseline
 ```{r}
-
+BD_DE_GO = read.csv("BD_DE_GO.csv")
 ```
+- Creating dendrograms (more info can be found in the r file GO_MWU.R)
+- First, run MF; edit the input stuff to match what you're running
+- BD_DE_GO.csv has two columns of comma-separated values: gene id, continuous measure of significance. To perform standard GO enrichment analysis based on Fisher's exact test, use binary measure (0 or 1, i.e., either significant or not).
+- orb_fav_iso2go.txt is two-column, tab-delimited, one line per gene, multiple GO terms separated by semicolon. If you have multiple lines per gene, use nrify_GOtable.pl prior to running this script.
+- go.obo is downloaded from http://www.geneontology.org/GO.downloads.ontology.shtml
+- goDivision is either MF, BP, or CC
+```{r}
+head(read.csv("BD_DE_GO.csv"))
+input="BD_DE_GO.csv"
+goAnnotations="orb_fav_iso2go.txt"
+goDatabase="go.obo"
+goDivision="MF"
+source("gomwu.functions.R")
+```
+- Calculating stats. It might take ~3 min for MF and BP. Do not rerun it if you just want to replot the data with different cutoffs, go straight to gomwuPlot. If you change any of the numeric values below, delete the files that were generated in previous runs first.
+- perlPath: replace with full path to perl executable if it is not in your system's PATH already
+- largest: a GO category will not be considered if it contains more than this fraction of the total number of genes
+- smallest: a GO category should contain at least this many genes to be considered
+- clusterCutHeight: threshold for merginng similar (gene-sharing) terms. See gomwu README for details
+```{r}
+gomwuStats(input, goDatabase, goAnnotations, goDivision,
+           perlPath="perl",
+           largest=0.1,
+           smallest=5,
+           clusterCutHeight=0.25)
+```
+- Returned 9 GO terms at 10% FDR
+- Plot results in a dendrogram
+- Typing resultsMF gives you the data in a written format
+```{r}
+quartz()
+resultsMF=gomwuPlot(input,goAnnotations,goDivision,
+                  #	absValue=-log(0.05,10),  # genes with the measure value exceeding this will be counted as "good genes". Specify absValue=0.001 if you are doing Fisher's exact test for standard GO enrichment or analyzing a WGCNA module (all non-zero genes = "good genes").
+                  absValue=1,
+                  level1=0.1, # FDR threshold for plotting. Specify level1=1 to plot all GO categories containing genes exceeding the absValue.
+                  level2=0.05, # FDR cutoff to print in regular (not italic) font.
+                  level3=0.01, # FDR cutoff to print in large bold font.
+                  txtsize=1.5,    # decrease to fit more on one page, or increase (after rescaling the plot so the tree fits the text) for better "word cloud" effect
+                  treeHeight=0.5, # height of the hierarchical clustering tree
+                  #	colors=c("dodgerblue2","firebrick1","skyblue","lightcoral") # these are default colors, un-remark and change if needed
+)
+resultsMF
+```
+- Doesn't look that pretty, but if you really want it to look nice, run the above code in base R and then you can manipulate the size of the image to your liking, or export it as a pdf and fiddle around with the size
+- Red is upregulated in D and blue is downregulated in D (upregulated in B)
+- The GO term we are most interested in here is Oxidoreductase, remember this for later
 
+- Now let's run the above protocol for BP
+```{r}
+head(read.csv("BD_DE_GO.csv"))
+input="BD_DE_GO.csv"
+goAnnotations="orb_fav_iso2go.txt"
+goDatabase="go.obo"
+goDivision="BP"
+source("gomwu.functions.R")
 
+gomwuStats(input, goDatabase, goAnnotations, goDivision,
+           perlPath="perl",
+           largest=0.1,
+           smallest=5,
+           clusterCutHeight=0.25)
+
+quartz()
+resultsBP=gomwuPlot(input,goAnnotations,goDivision,
+                  absValue=1,
+                  level1=0.1,
+                  level2=0.05,
+                  level3=0.01,
+                  txtsize=1.5,
+                  treeHeight=0.5,
+)
+resultsBP
+```
+- Returned 6 GO terms at 10% FDR
+- Here we are interested in the positive regulation of cell proliferation
+
+- Now let's run it for CC
+```{r}
+head(read.csv("BD_DE_GO.csv"))
+input="BD_DE_GO.csv"
+goAnnotations="orb_fav_iso2go.txt"
+goDatabase="go.obo"
+goDivision="CC"
+source("gomwu.functions.R")
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision,
+           perlPath="perl",
+           largest=0.1,
+           smallest=5,
+           clusterCutHeight=0.25)
+
+quartz()
+resultsCC=gomwuPlot(input,goAnnotations,goDivision,
+                  absValue=1,
+                  level1=0.1,
+                  level2=0.05,
+                  level3=0.01,
+                  txtsize=1.5,
+                  treeHeight=0.5,
+)
+resultsCC
+```
+- Returned 18 GO terms of interest
+- Interested in the oxidoreductase complex
 
 
