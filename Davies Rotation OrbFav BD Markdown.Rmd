@@ -1,0 +1,261 @@
+---
+title: "Davies Rotation OrbFav Reuptake"
+output: html_document
+---
+- Set your working directory; if your files are in folders, you have to specify the command to enter the folder with a slash
+- Load the proper packages
+
+```{r}
+setwd("~/R/Davies Lab/Orb Fav")
+library("DESeq2")
+library("ggplot2")
+```
+- Read in counts using read.table, of pre-filtered count data. The function read.table reads a file in table format and creates a data frame from it (cases corresponding to lines and variables to fields in the file)
+```{r}
+countData <- read.table("fav_uptake_cleaned_BM3.txt")
+head(countData)
+```
+- All data were previously filtered for a base mean of 3
+- Now determine the length of the data file 
+```{r}
+length(countData[,1])
+```
+- Get and plot total counts data for each reinfection experiment
+```{r}
+totalCounts=colSums(countData)
+totalCounts
+barplot(totalCounts, col=c("green",  "green", "green", "blue" , "blue" , "blue"), ylab="raw counts")
+min(totalCounts)
+max(totalCounts)
+```
+- What we see from the above barplot is that some of our samples have high count numbers (BR.C, DR.A, and DR.C) but others have very low count data (BR.A, BR.B, annd DR.B). Keep this count data in mind as it will be very important when analying the differential expression of genes between coral hosting B and coral hosting D
+
+- Now create the vector "treat" of each strain
+- Then turn the vector "treat" into a dataframe called "g"
+- Rename the dataframe "colData"
+```{r}
+treat=c( "B", "B", "B", "D", "D", "D")
+g=data.frame(treat)
+g
+colData<- g
+colData
+```
+
+- run DESeqDataSetFromMatrix and name it dds with countData for matrix input, colData for columns, and "treat" to dictate how the counts for each gene depend on the variables in colData
+- then run DESeq on dds
+```{r}
+dds<-DESeqDataSetFromMatrix(countData=countData, colData=colData, design=~treat)
+dds<-DESeq(dds)
+
+head(dds)
+res<- results(dds)
+res
+```
+- The above code gives the log2 fold change (MLE): treat D vs B
+- this means that pos log2FC values indicate D is upregulated compared to B
+- The name provided in the second element (B) is the baseline
+
+-Next look at the dispersions plot, which basically just tells you the spread of your data
+```{r}
+plotDispEsts(dds, main="Dispersion plot Uptake")
+```
+- Now we are going to retrieve the rlog data, which will give us better transformation when size factors vary across samples
+- regularized log transformation, transforms count data to log2 scale to minimize differences between samples for rows with small counts
+
+```{r}
+rld <- rlogTransformation(dds, blind=TRUE)
+head(assay(rld))
+hist(assay(rld))
+```
+- The assay function allows you to access the matrix-like data, so that you can view it bc head(rld) gives you just a summary
+- The histogram above displays the frequency of each binned rld count value
+
+- Load the library RColorBrewer
+```{r}
+library(RColorBrewer)
+```
+- Making a sample distance heatmap
+- as.matrix attempts to turn its argument into a matrix
+- dist computes and returns the distance matrix computed using the specified distance measure to compute distances between the rows of a data matrix (assay(rld))
+- Create a sample heatmap of the relatedness based on the count distance/difference between samples
+```{r}
+sampleDists <- as.matrix(dist(t(assay(rld))))
+library(gplots)
+heatmap.2(as.matrix(sampleDists), key=F, trace="none",
+          col=colorpanel(100, "black", "white"),
+          margin=c(10, 10))
+```
+- Now look at results of dds comparing (average) B and D
+- The second term is the "control" we will use B as control in this case
+
+```{r}
+resBD <- results(dds, contrast=c("treat","D","B"))
+```
+- How many gene counts have FDR < 10%
+- Analyze the count differences between B and D
+- This is all quality control
+```{r}
+table(resBD$padj<0.1)
+summary(resBD)
+plotMA(resBD, main="B vs D")
+```
+- Now make a table of the differential expression values (log2fc) between B and D
+```{r}
+write.table(resBD, file="BD_DE.txt", quote=F, sep="\t")
+head(read.delim("BD_DE.txt"))
+```
+- "BD_DE.txt" contains the log2FC, the pvalue, and the padj, as well as some other data that we don't really need
+
+-load tidyverse
+```{r}
+library(tidyverse)
+```
+- Get the p-values from your data file
+- Create valBD that is a table from resBD of just the pvalues and adjusted p-values (p-adj)
+- Then give the columns approprite names
+```{r}
+valBD=cbind(resBD$pvalue, resBD$padj)
+head(valBD)
+colnames(valBD)=c("pval.BD", "padj.BD")
+length(valBD[,1])
+```
+- Return a logical vector in which both cases (pval and padj) are complete (no missing values)
+```{r}
+table(complete.cases(valBD))
+```
+- Make a table (that you can visualize via assay) of the rlogdata and pvals
+- Then make the column names for rld the same ones that were in colData$treat
+```{r}
+rlog=rlogTransformation(dds, blind=TRUE) 
+rld=assay(rlog)
+head(rld)
+colnames(rld)=paste(colData$treat)
+head(rld)
+length(rld[,1])
+```
+- Combine rld with your table of pval and padj values (valBD)
+```{r}
+rldpvals=cbind(rld,valBD)
+head(rldpvals)
+dim(rldpvals)
+table(complete.cases(rldpvals))
+```
+- Create a new csv file from rldpvals
+```{r}
+write.csv(rldpvals, "timmy_uptake_RLDandPVALS.csv", quote=F)
+```
+- Create a heatmap of sample distances based on pvalues
+- Make a new variable for your csv file
+```{r}
+rldpvals <- read.csv(file="timmy_uptake_RLDandPVALS.csv", row.names=1)
+head(rldpvals)
+```
+- Make rld that a variable that just returns the first six columns with values (rownames then columns 1-6)
+```{r}
+rld=rldpvals[,1:6]
+head(rld)
+```
+- dist computes and returns the distance matrix computed using the specified distance measure to compute distances between the rows of a data matrix (rld); determine the overall differences in expression between each sample
+- Turn the distances into a matrix
+```{r}
+sampleDists <- dist(t(rld))
+sampleDistMatrix <- as.matrix(sampleDists)
+```
+- Create a vector of treatment titles for the matrix and apply them to the rows and columns
+```{r}
+treat=c("B", "B", "B", "D", "D", "D")
+colnames(sampleDistMatrix)=paste(treat)
+rownames(sampleDistMatrix)=paste(treat)
+```
+- Install some packages to make heatmaps
+```{r}
+install.packages("pheatmap", repos='http://cran.us.r-project.org')
+library("pheatmap")
+heat.colors = colorRampPalette(rev(c("blue","yellow")),bias=0.3)(100)
+quartz()
+```
+- Apply your matrix of overall expression distance to a heatmap
+```{r}
+pheatmap(sampleDistMatrix,color = heat.colors,cex=0.9,border_color=NA,cluster_rows=T,cluster_cols=T)
+```
+- Load some more packages for the next steps (PCA)
+```{r}
+library(vegan)
+library(ggplot2)
+library(ggrepel)
+library(tidyverse)
+```
+- Now going to perform PCA on the data to visualize overall effect of experimental covariates and batch effects
+- t hides all the columns somehow and just shows the gene identifiers?? I'm not really sure tho, maybe just shows me the rownames
+```{r}
+rld_t=t(rld)
+head(rld)
+head(rld_t)
+```
+- prcomp performs a pca on given data matrix and returns results as an object of class prcomp
+```{r}
+pca <- prcomp(rld_t,center = TRUE, scale. = TRUE, na.action=na.omit)
+head(pca)
+```
+
+- sdev is the standard deviations of the principal components
+- Using the sdev, calculate the proportion that each PC corresponds to the variance
+- Then round PC1 and PC2 (times 100, to 1 sigfig)
+```{r}
+li <- pca$sdev^2 / sum(pca$sdev^2)
+pc1v <- round(li[1] * 100, 1)
+pc2v <- round(li[2] * 100, 1)
+```
+- x from prcomp seems like it's the coordinates of each treatment in the PCA
+- turn pca$x into a dataframe
+```{r}
+pca_s <- as.data.frame(pca$x)
+head(pca_s)
+```
+- Just take PC1 and PC2 and add your sample and treatment names
+```{r}
+pca_s <- pca_s[,c(1,2)]
+head(pca_s)
+pca_s$Samples = row.names(pca_s)
+head(pca_s)
+pca_s$treat=colData$treat
+head(pca_s)
+```
+- Creating your PCA plot
+- aes is aesthetic mappings, how variables are mapped to visual properties
+```{r}
+cbPalette <- c("darkorchid4","firebrick4")
+ggplot(pca_s, aes(PC1, PC2, color = treat, pch = treat)) +
+  geom_point(size=3) +
+  #  geom_text_repel(aes(label=Samples)) +
+  scale_colour_manual(values=cbPalette)+
+  theme_bw() +
+  # geom_density2d(alpha=.5)+
+  geom_polygon(alpha=.2)+
+  xlab(paste0("PC1: ",pc1v,"% variance")) +
+  ylab(paste0("PC2: ",pc2v,"% variance")) 
+```
+- You can see from this plot that the B samples have very high variance and that there's some overlap between the samples
+
+-I'm skipping the adonis part because it gave me an error and doesn't seem that important
+
+
+
+
+
+ACTUAL DIFFERENTIAL GENE EXPRESSION ANALYSIS STARTS HERE
+- This is just the preliminary GO enrichment analysis of all the genes. The way gomwu works is that it performs rankings and gives you enrichment of GO terms in the ranked list. So GO terms that show up may not actually contain only genes that are significantly differentially expressed, that gene set is just enriched
+
+- Plotting genes within each GO category between B and D
+- MF: Molecular function
+- BP: Biological process
+- CC: Cellular component
+
+- Manipulated BD_DE.txt in excel following Sarah's verbal instructions and loaded it here
+```{r}
+
+```
+
+
+
+
