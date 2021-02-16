@@ -6,7 +6,7 @@ output: html_document
 - Load the proper packages
 
 ```{r}
-setwd("~/R/Davies Lab/Orb Fav")
+setwd("/Users/mariaingersoll/Desktop/BU Research/Davies-Gilmore")
 library("DESeq2")
 library("ggplot2")
 ```
