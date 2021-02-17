@@ -580,6 +580,13 @@ knitr::include_graphics("Ofav 0.5 Sig DEG Mean Heatmap.pdf")
 ```
 
 
+- MAIN FINDINGS:
+- From GO MWU analysis of ranked GO term enrichment, we found that Postitive Regulation of Cell Proliferation and various Oxidoreductase activities are enriched in samples hosting D compared to B recruits
+- From analysis of all significantly differentially expressed genes, we identified the following:
+- SODC (superoxide dismutase) is strongly upregulated in coral hosting D compared to B; SODC is an NF-kB response gene; this is consistent with our expectations that coral hosting D would perform better under thermal/oxidative stress because increased SOD means an increased ability to deal with oxidative stress
+- To a lesser extent, HSP110 may be downregulated in D compared to B, but this may be an effect of count value
+- TNFSF10 and TRAF4.2 were identified as upregulated in one B (B.1) compared to D (i.e., downregulated in D), but again, this may be an effect of count size
+
 
 
 
