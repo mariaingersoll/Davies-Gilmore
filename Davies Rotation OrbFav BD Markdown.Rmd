@@ -269,7 +269,7 @@ BD_DE_GO = read.csv("BD_DE_GO.csv")
 - orb_fav_iso2go.txt is two-column, tab-delimited, one line per gene, multiple GO terms separated by semicolon. If you have multiple lines per gene, use nrify_GOtable.pl prior to running this script.
 - go.obo is downloaded from http://www.geneontology.org/GO.downloads.ontology.shtml
 - goDivision is either MF, BP, or CC
-```{r}
+```{r eval=FALSE}
 head(read.csv("BD_DE_GO.csv"))
 input="BD_DE_GO.csv"
 goAnnotations="orb_fav_iso2go.txt"
@@ -282,7 +282,7 @@ source("gomwu.functions.R")
 - largest: a GO category will not be considered if it contains more than this fraction of the total number of genes
 - smallest: a GO category should contain at least this many genes to be considered
 - clusterCutHeight: threshold for merginng similar (gene-sharing) terms. See gomwu README for details
-```{r}
+```{r eval=FALSE}
 gomwuStats(input, goDatabase, goAnnotations, goDivision,
            perlPath="perl",
            largest=0.1,
@@ -292,7 +292,7 @@ gomwuStats(input, goDatabase, goAnnotations, goDivision,
 - Returned 9 GO terms at 10% FDR
 - Plot results in a dendrogram
 - Typing resultsMF gives you the data in a written format
-```{r warning=FALSE}
+```{r eval=FALSE, warning=FALSE}
 quartz()
 resultsMF=gomwuPlot(input,goAnnotations,goDivision,
                   #	absValue=-log(0.05,10),  # genes with the measure value exceeding this will be counted as "good genes". Specify absValue=0.001 if you are doing Fisher's exact test for standard GO enrichment or analyzing a WGCNA module (all non-zero genes = "good genes").
@@ -311,7 +311,7 @@ resultsMF
 - The GO term we are most interested in here is Oxidoreductase, remember this for later
 
 - Now let's run the above protocol for BP
-```{r}
+```{r eval=FALSE}
 head(read.csv("BD_DE_GO.csv"))
 input="BD_DE_GO.csv"
 goAnnotations="orb_fav_iso2go.txt"
@@ -327,7 +327,7 @@ gomwuStats(input, goDatabase, goAnnotations, goDivision,
 ```
 
 
-```{r warning=FALSE}
+```{r eval=FALSE, warning=FALSE}
 quartz()
 resultsBP=gomwuPlot(input,goAnnotations,goDivision,
                   absValue=1,
@@ -343,7 +343,7 @@ resultsBP
 - Here we are interested in the positive regulation of cell proliferation
 
 - Now let's run it for CC
-```{r}
+```{r eval=FALSE}
 head(read.csv("BD_DE_GO.csv"))
 input="BD_DE_GO.csv"
 goAnnotations="orb_fav_iso2go.txt"
@@ -359,7 +359,7 @@ gomwuStats(input, goDatabase, goAnnotations, goDivision,
 ```
 
 
-```{r warning=FALSE}
+```{r eval=FALSE, warning=FALSE}
 quartz()
 resultsCC=gomwuPlot(input,goAnnotations,goDivision,
                   absValue=1,
@@ -576,7 +576,8 @@ heatmap_sigDEG_means = heatmap.2(as.matrix(explc_sig), col = col0, Rowv = TRUE, 
 - Also attach the pdf image of the heatmap so that all the gene symbols are visible
 ```{r}
 write.csv(explc_sig, "0.5DEG_BD_genesymbols.csv", quote = F)
-knitr::include_graphics("Ofav 0.5 Sig DEG Mean Heatmap.pdf")
+knitr::opts_chunk$set(echo = TRUE)
+knitr::include_graphics("Ofav 0.5 Sig DEG Mean Heatmap.jpg")
 ```
 
 
