@@ -594,3 +594,5 @@ gomwuStats(input, goDatabase, goAnnotations, goDivision,
            smallest=5,   # a GO category should contain at least this many genes to be considered
            clusterCutHeight=0.25)
 #MF, BP, and CC all gave me 0 GO terms at 10% FDR, make sure that the rownames thing isn't messing it up
+#This is just your result, because of the level of stringency
+#So basically, what you're ending up with is that heatmap of all the DEGs to explore
