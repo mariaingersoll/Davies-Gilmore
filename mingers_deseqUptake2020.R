@@ -175,6 +175,7 @@ li <- pca$sdev^2 / sum(pca$sdev^2)
 #round PC1 and PC2 (times 100, to 1 sigfig)
 pc1v <- round(li[1] * 100, 1)
 pc2v <- round(li[2] * 100, 1)
+pc3v <- round(li[3] * 100, 1)
   #######x from prcomp seems like it's the coordinates of each treatment in the PCA
 #turn pca$x into a dataframe
 pca_s <- as.data.frame(pca$x)
